@@ -1,26 +1,73 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My GitHub Website</title>
+  <title>Wheat Plant Detection</title>
   <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css"/>
   <script type="module" src="https://pyscript.net/releases/2025.11.2/core.js"></script>
+  <style>
+    #preview {
+      max-width: 400px;
+      max-height: 400px;
+      display: none;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+    }
+    #result {
+      font-size: 1.2em;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <header>
     <h1>Wheat Plant Detection</h1>
-    <p>Use this AI to classifiy your wheat plant into one of [x] categories: [category list]</p>
+    <p>Use this AI to classify your wheat plant into one of 3 categories: Healthy, Disease A, Disease B.</p>
   </header>
 
-  <!-- <button onclick="sayHello()">Click me</button>*/ -->
-  
-  <script type="py" src="script.py" config="pyscript.toml"></script>
-  <script type="mpy" terminal>
-    print("Hello, world!")
-  </script>
-  <form action="/upload" method="post" enctype="multipart/form-data">
-    <input type="file" name="imageUpload" accept="image/*">
-    <input type="submit" value="Upload Image">
-  </form>
+  <input type="file" id="imageInput" accept="image/*">
+  <img id="preview" src="#" alt="Image Preview">
+  <div id="result"></div>
+
+  <py-script>
+from js import document
+from pyodide.ffi import create_proxy
+
+# --- Define your own categories here ---
+CATEGORIES = ['Healthy', 'Disease A', 'Disease B']
+
+def fake_classifier(image_bytes):
+    # This is placeholder logic.
+    # Replace this with your actual image classification logic!
+    import random
+    return random.choice(CATEGORIES)
+
+def handle_image_change(event):
+    file = event.target.files[0]
+    if not file:
+        document.getElementById('preview').style.display = 'none'
+        document.getElementById('result').innerText = ''
+        return
+    
+    # Preview image in <img>
+    img_url = window.URL.createObjectURL(file)
+    document.getElementById('preview').src = img_url
+    document.getElementById('preview').style.display = 'block'
+
+    # Read image bytes and classify (simulate here -- replace with real model)
+    reader = window.FileReader.new()
+    def onload(ev):
+        # Get bytes from JS ArrayBuffer
+        image_bytes = bytes(reader.result)
+        category = fake_classifier(image_bytes)
+        document.getElementById('result').innerText = f"Predicted category: {category}"
+    reader.onload = create_proxy(onload)
+    reader.readAsArrayBuffer(file)
+
+# Attach Python event handler to JS
+document.getElementById('imageInput').addEventListener('change', create_proxy(handle_image_change))
+  </py-script>
 </body>
 </html>
