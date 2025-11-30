@@ -78,7 +78,7 @@ def handle_file_upload(event):
     reader2.readAsArrayBuffer(file)
 
 def init(event=None):
-    file_input = document.getElementById("imageInput")  # ← FIXED
+    file_input = document.getElementById("imageInput")
     file_input.addEventListener("change", create_proxy(handle_file_upload))
 
 document.addEventListener("DOMContentLoaded", create_proxy(init))
