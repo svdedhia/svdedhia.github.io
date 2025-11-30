@@ -56,35 +56,34 @@ def handle_file_upload(event):
     if not file:
         return
 
-    # --- Create JS FileReader ---
     reader = window.FileReader()
 
-    # --- Preview callback ---
-    def on_preview_load(evt):
-        preview_img = document.getElementById('preview')
-        preview_img.src = evt.target.result   # <-- preview now works
-        preview_img.style.display = 'block'
+    def on_preview(evt):
+        preview_img = document.getElementById("preview")
+        preview_img.src = evt.target.result
+        preview_img.style.display = "block"
 
-    # --- Raw bytes callback ---
-    def on_bytes_load(evt):
-        binary = window.Uint8Array.new(evt.target.result)
-        image_bytes = bytes(binary)
+    reader.onload = create_proxy(on_preview)
+    reader.readAsDataURL(file)  # show preview
 
-        # run classifier
-        category = fake_classifier(image_bytes)
-        document.getElementById('result').innerText = f"Predicted category: {category}"
-
-    # Connect callbacks
-    reader.onload = create_proxy(on_preview_load)
-    reader.readAsDataURL(file)  # for preview
-
+    # second reader for bytes
     reader2 = window.FileReader()
-    reader2.onload = create_proxy(on_bytes_load)
-    reader2.readAsArrayBuffer(file)  # for raw bytes
 
-# Attach listener
-file_input = document.getElementById('file-upload')
-file_input.addEventListener('change', create_proxy(handle_file_upload))
+    def on_bytes(evt):
+        arr = window.Uint8Array.new(evt.target.result)
+        image_bytes = bytes(arr)
+        category = fake_classifier(image_bytes)
+        document.getElementById("result").innerText = f"Predicted category: {category}"
+
+    reader2.onload = create_proxy(on_bytes)
+    reader2.readAsArrayBuffer(file)
+
+def init(event=None):
+    file_input = document.getElementById("file-upload")
+    file_input.addEventListener("change", create_proxy(handle_file_upload))
+
+# Wait for DOM to exist
+document.addEventListener("DOMContentLoaded", create_proxy(init))
 </py-script>
 
 
