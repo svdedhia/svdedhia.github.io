@@ -29,16 +29,21 @@
   </header>
 
   <div class="upload-section">
-  <label for="imageInput" class="upload-label">
-    <span>📷 Choose Image</span>
-  </label>
+
+  <div class="button-row">
+    <label for="imageInput" class="upload-label">
+      <span>📷 Choose Image</span>
+    </label>
+
+    <button class="upload-btn">Classify</button>
+  </div>
+
   <input type="file" id="imageInput" accept="image/*" style="display:none;">
+
   <div id="preview-container">
     <img id="preview" src="#" alt="Image Preview" style="display:none;">
   </div>
-</div>
-<button class="upload-btn">Classify</button>
-<div id="result" class="result-badge"></div>
+  </div>
 
   <py-script>
 from js import document
