@@ -27,9 +27,17 @@
     <p>Use this AI to classify your wheat plant into one of 3 categories: Healthy, Disease A, Disease B.</p>
   </header>
 
-  <input type="file" id="imageInput" accept="image/*">
-  <img id="preview" src="#" alt="Image Preview">
-  <div id="result"></div>
+  <div class="upload-section">
+  <label for="imageInput" class="upload-label">
+    <span>📷 Choose Image</span>
+  </label>
+  <input type="file" id="imageInput" accept="image/*" style="display:none;">
+  <div id="preview-container">
+    <img id="preview" src="#" alt="Image Preview" style="display:none;">
+  </div>
+</div>
+<button class="upload-btn">Classify</button>
+<div id="result" class="result-badge"></div>
 
   <py-script>
 from js import document
