@@ -10,7 +10,6 @@
 
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
   <header>
     <h1>Wheat Plant Detection</h1>
@@ -18,7 +17,6 @@
   </header>
 
   <div class="upload-section">
-
     <div class="button-row">
       <label for="imageInput" class="upload-label">📷 Choose Image</label>
       <button id="classifyBtn" class="upload-btn">Classify</button>
@@ -27,52 +25,50 @@
     <input type="file" id="imageInput" accept="image/*" style="display:none;">
 
     <div id="preview-container">
-      <img id="preview" style="display:none;">
+      <img id="preview" style="display:none; max-width:300px; max-height:300px;">
     </div>
-
   </div>
 
   <div id="result" class="result-badge"></div>
 
-
   <py-script>
-from pyscript import Element
 import asyncio
 import random
+from pyscript import when
 
 CATEGORIES = ["Healthy", "Disease A", "Disease B"]
+selected_file = None
 
-# --- Fake classifier (replace with your ML model later) ---
-def classify(image_bytes):
+def fake_classifier(image_bytes):
     return random.choice(CATEGORIES)
 
-# --- Image preview & classification logic ---
-async def preview_and_classify():
-    file_input = Element("imageInput").element
-    file = file_input.files[0] if file_input.files.length > 0 else None
-    if not file:
+# Handle file selection and preview
+@when("change", "#imageInput")
+async def preview_image(event):
+    global selected_file
+    selected_file = event.target.files[0]
+    if not selected_file:
         return
+    
+    # Read image as DataURL for preview
+    data_url = await selected_file.toDataURL()
+    preview = document.getElementById("preview")
+    preview.src = data_url
+    preview.style.display = "block"
 
-    # 1. Read image as DataURL (preview)
-    data_url = await file.toDataURL()
-    preview = Element("preview")
-    preview.element.src = data_url
-    preview.element.style.display = "block"
-
-    # 2. Read as bytes for classification
-    array_buffer = await file.arrayBuffer()
+# Handle classify button
+@when("click", "#classifyBtn")
+async def classify_image(event):
+    if not selected_file:
+        document.getElementById("result").innerText = "No image selected!"
+        return
+    
+    # Read bytes for classification
+    array_buffer = await selected_file.arrayBuffer()
     image_bytes = bytes(array_buffer.to_bytes())
-
-    # 3. Predict
-    result = classify(image_bytes)
-    Element("result").write(f"Predicted: {result}")
-
-# --- Bind events (no JS written by you) ---
-def setup_events():
-    Element("imageInput").element.onchange = lambda e: asyncio.ensure_future(preview_and_classify())
-    Element("classifyBtn").element.onclick = lambda e: asyncio.ensure_future(preview_and_classify())
-
-setup_events()
+    
+    category = fake_classifier(image_bytes)
+    document.getElementById("result").innerText = f"Predicted: {category}"
   </py-script>
 </body>
 </html>
