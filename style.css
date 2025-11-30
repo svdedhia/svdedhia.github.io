@@ -1,53 +1,122 @@
-.upload-section {
+/* Main layout styling */
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #ebffe8, #d6fcd0);
+  margin: 0;
+  padding: 0;
   text-align: center;
-  margin-top: 2em;
-  margin-bottom: 2em;
+  color: #234d16;
 }
 
-.upload-label {
-  background: #e0ffd6;
-  color: #3a6200;
-  padding: 1em 2em;
-  border-radius: 18px;
-  font-size: 1.1em;
-  cursor: pointer;
-  border: 2px dashed #75c66a;
-  display: inline-block;
-  transition: background 0.25s;
-}
-.upload-label:hover {
-  background: #d6edb9;
-}
-#preview-container {
+/* Header spacing + readability */
+header h1 {
+  font-size: 2.4em;
   margin-top: 1em;
+  letter-spacing: -1px;
+  font-weight: 700;
 }
-#preview {
-  max-width: 280px;
-  max-height: 280px;
-  border-radius: 14px;
-  border: 2px solid #a1e48c;
-  box-shadow: 0 2px 8px rgba(0,128,0,0.10);
+
+header p {
+  font-size: 1.2em;
+  margin-bottom: 2em;
+  opacity: 0.8;
 }
-.upload-btn {
-  background: #9ad97b;
-  color: #184d00;
-  border: none;
-  padding: .7em 1.6em;
-  border-radius: 12px;
-  font-size: 1.1em;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.3s;
+
+/* Main card container */
+.upload-section {
+  width: 90%;
+  max-width: 450px;
+  margin: auto;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 2em;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  backdrop-filter: blur(7px);
+  animation: fadeIn 0.7s ease-out;
 }
-.upload-btn:hover {
-  background: #75c66a;
-}
-.result-badge {
-  margin-top: 1em;
-}
+
+/* For keeping both buttons on the same line */
 .button-row {
   display: flex;
   justify-content: center;
-  gap: 1em;   /* space between buttons */
-  margin-bottom: 1em;
+  gap: 1em;
+  margin-bottom: 1.2em;
+}
+
+/* "Choose image" button styling */
+.upload-label {
+  background: #e0ffd6;
+  color: #234d16;
+  padding: 0.9em 1.6em;
+  border-radius: 14px;
+  font-size: 1em;
+  cursor: pointer;
+  border: 2px dashed #76c56e;
+  transition: 0.3s ease;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.upload-label:hover {
+  background: #cbf5ba;
+  transform: translateY(-2px);
+}
+
+/* "Classify" button styling */
+.upload-btn {
+  background: #8fd877;
+  color: #113a00;
+  border: none;
+  padding: 0.9em 1.6em;
+  border-radius: 14px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: 0.25s ease;
+  font-weight: 600;
+}
+
+.upload-btn:hover {
+  background: #74c667;
+  transform: translateY(-2px);
+}
+
+/* Image preview box */
+#preview-container {
+  margin-top: 1em;
+}
+
+#preview {
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 18px;
+  border: 2px solid #a1e48c;
+  box-shadow: 0 4px 12px rgba(0,128,0,0.15);
+  animation: fadeIn 0.5s ease;
+}
+
+/* Classification result styling */
+.result-badge {
+  margin-top: 1em;
+  background: #f0fff0;
+  padding: 1em 1.4em;
+  border-radius: 14px;
+  border: 2px solid #9ad97b;
+  font-weight: 700;
+  font-size: 1.2em;
+  color: #184d00;
+  display: inline-block;
+  box-shadow: 0 4px 15px rgba(0,128,0,0.12);
+  animation: popIn 0.4s ease-out;
+}
+
+/* Animation for subtle fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Animation for the result popping in */
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
