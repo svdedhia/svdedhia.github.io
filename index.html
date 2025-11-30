@@ -24,4 +24,55 @@
       <button id="classifyBtn" class="upload-btn">Classify</button>
     </div>
 
-    <input type="file" id="imageInput" accept="image/*" sty*
+    <input type="file" id="imageInput" accept="image/*" style="display:none;">
+
+    <div id="preview-container">
+      <img id="preview" style="display:none;">
+    </div>
+
+  </div>
+
+  <div id="result" class="result-badge"></div>
+
+
+  <py-script>
+from pyscript import Element
+import asyncio
+import random
+
+CATEGORIES = ["Healthy", "Disease A", "Disease B"]
+
+# --- Fake classifier (replace with your ML model later) ---
+def classify(image_bytes):
+    return random.choice(CATEGORIES)
+
+# --- Image preview & classification logic ---
+async def preview_and_classify():
+    file_input = Element("imageInput").element
+    file = file_input.files[0] if file_input.files.length > 0 else None
+    if not file:
+        return
+
+    # 1. Read image as DataURL (preview)
+    data_url = await file.toDataURL()
+    preview = Element("preview")
+    preview.element.src = data_url
+    preview.element.style.display = "block"
+
+    # 2. Read as bytes for classification
+    array_buffer = await file.arrayBuffer()
+    image_bytes = bytes(array_buffer.to_bytes())
+
+    # 3. Predict
+    result = classify(image_bytes)
+    Element("result").write(f"Predicted: {result}")
+
+# --- Bind events (no JS written by you) ---
+def setup_events():
+    Element("imageInput").element.onchange = lambda e: asyncio.ensure_future(preview_and_classify())
+    Element("classifyBtn").element.onclick = lambda e: asyncio.ensure_future(preview_and_classify())
+
+setup_events()
+  </py-script>
+</body>
+</html>
