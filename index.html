@@ -32,6 +32,7 @@
   <div id="result" class="result-badge"></div>
 
   <py-script>
+<py-script output="none">
 import asyncio
 import random
 from pyscript import when
@@ -42,33 +43,30 @@ selected_file = None
 def fake_classifier(image_bytes):
     return random.choice(CATEGORIES)
 
-# Handle file selection and preview
+# Preview handler
 @when("change", "#imageInput")
 async def preview_image(event):
     global selected_file
     selected_file = event.target.files[0]
     if not selected_file:
         return
-    
-    # Read image as DataURL for preview
     data_url = await selected_file.toDataURL()
     preview = document.getElementById("preview")
     preview.src = data_url
     preview.style.display = "block"
 
-# Handle classify button
+# Classify handler
 @when("click", "#classifyBtn")
 async def classify_image(event):
     if not selected_file:
         document.getElementById("result").innerText = "No image selected!"
         return
-    
-    # Read bytes for classification
     array_buffer = await selected_file.arrayBuffer()
     image_bytes = bytes(array_buffer.to_bytes())
-    
     category = fake_classifier(image_bytes)
     document.getElementById("result").innerText = f"Predicted: {category}"
+</py-script>
+
   </py-script>
 </body>
 </html>
