@@ -5,86 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Detection</title>
 
-  <!-- Core PyScript + CSS -->
   <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css"/>
   <script type="module" src="https://pyscript.net/releases/2025.11.2/core.js"></script>
 
-  <!-- Custom styling -->
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <header>
     <h1>Wheat Plant Detection</h1>
-    <!-- Clear description of what the app does -->
-    <p>Use this AI to classify your wheat plant into one of [x] categories: [categories].</p>
+    <p>Use this AI to classify your wheat plant into one of 3 categories.</p>
   </header>
 
   <div class="upload-section">
 
-    <!-- Buttons grouped together -->
     <div class="button-row">
-      <label for="imageInput" class="upload-label">
-        <span>📷 Choose Image</span>
-      </label>
-
-      <button class="upload-btn">Classify</button>
+      <label for="imageInput" class="upload-label">📷 Choose Image</label>
+      <button id="classifyBtn" class="upload-btn">Classify</button>
     </div>
 
-    <!-- Hidden file input -->
-    <input type="file" id="imageInput" accept="image/*" style="display:none;">
-
-    <!-- Image preview -->
-    <div id="preview-container">
-      <img id="preview" src="#" alt="Image Preview" style="display:none;">
-    </div>
-
-  </div>
-
-  <!-- Classification result output -->
-  <div id="result" class="result-badge"></div>
-
-  <py-script>
-from js import document, window
-from pyodide.ffi import create_proxy
-
-def fake_classifier(image_bytes):
-    return "Healthy Wheat"
-
-def handle_file_upload(event):
-    file = event.target.files[0]
-    if not file:
-        return
-
-    reader = window.FileReader()
-
-    def on_preview(evt):
-        preview_img = document.getElementById("preview")
-        preview_img.src = evt.target.result
-        preview_img.style.display = "block"
-
-    reader.onload = create_proxy(on_preview)
-    reader.readAsDataURL(file)
-
-    reader2 = window.FileReader()
-
-    def on_bytes(evt):
-        arr = window.Uint8Array.new(evt.target.result)
-        image_bytes = bytes(arr)
-        category = fake_classifier(image_bytes)
-        document.getElementById("result").innerText = f"Predicted category: {category}"
-
-    reader2.onload = create_proxy(on_bytes)
-    reader2.readAsArrayBuffer(file)
-
-def init(event=None):
-    file_input = document.getElementById("imageInput")
-    file_input.addEventListener("change", create_proxy(handle_file_upload))
-
-document.addEventListener("DOMContentLoaded", create_proxy(init))
-
-</py-script>
-
-
-</body>
-</html>
+    <input type="file" id="imageInput" accept="image/*" sty*
