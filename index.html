@@ -64,9 +64,8 @@ def handle_file_upload(event):
         preview_img.style.display = "block"
 
     reader.onload = create_proxy(on_preview)
-    reader.readAsDataURL(file)  # show preview
+    reader.readAsDataURL(file)
 
-    # second reader for bytes
     reader2 = window.FileReader()
 
     def on_bytes(evt):
@@ -79,11 +78,11 @@ def handle_file_upload(event):
     reader2.readAsArrayBuffer(file)
 
 def init(event=None):
-    file_input = document.getElementById("file-upload")
+    file_input = document.getElementById("imageInput")  # ← FIXED
     file_input.addEventListener("change", create_proxy(handle_file_upload))
 
-# Wait for DOM to exist
 document.addEventListener("DOMContentLoaded", create_proxy(init))
+
 </py-script>
 
 
