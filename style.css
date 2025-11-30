@@ -45,3 +45,9 @@
 .result-badge {
   margin-top: 1em;
 }
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 1em;   /* space between buttons */
+  margin-bottom: 1em;
+}
