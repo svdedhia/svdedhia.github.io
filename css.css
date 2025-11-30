@@ -1,0 +1,47 @@
+.upload-section {
+  text-align: center;
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+.upload-label {
+  background: #e0ffd6;
+  color: #3a6200;
+  padding: 1em 2em;
+  border-radius: 18px;
+  font-size: 1.1em;
+  cursor: pointer;
+  border: 2px dashed #75c66a;
+  display: inline-block;
+  transition: background 0.25s;
+}
+.upload-label:hover {
+  background: #d6edb9;
+}
+#preview-container {
+  margin-top: 1em;
+}
+#preview {
+  max-width: 280px;
+  max-height: 280px;
+  border-radius: 14px;
+  border: 2px solid #a1e48c;
+  box-shadow: 0 2px 8px rgba(0,128,0,0.10);
+}
+.upload-btn {
+  background: #9ad97b;
+  color: #184d00;
+  border: none;
+  padding: .7em 1.6em;
+  border-radius: 12px;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s;
+}
+.upload-btn:hover {
+  background: #75c66a;
+}
+.result-badge {
+  margin-top: 1em;
+}
