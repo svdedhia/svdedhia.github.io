@@ -48,40 +48,45 @@
 from js import document, window
 from pyodide.ffi import create_proxy
 
-# Categories the model predicts
-CATEGORIES = ['Healthy', 'Disease A', 'Disease B']
-
-# Placeholder classifier for now
 def fake_classifier(image_bytes):
-    import random
-    return random.choice(CATEGORIES)
+    return "Healthy Wheat"
 
-# Runs when an image is uploaded
-def handle_image_change(event):
+def handle_file_upload(event):
     file = event.target.files[0]
     if not file:
-        document.getElementById('preview').style.display = 'none'
-        document.getElementById('result').innerText = ''
         return
-    
-    # Load preview in the <img> element
-    img_url = window.URL.createObjectURL(file)
-    document.getElementById('preview').src = img_url
-    document.getElementById('preview').style.display = 'block'
 
-    # Read the file bytes and classify it
-    reader = window.FileReader.new()
-    def onload(ev):
-        image_bytes = bytes(reader.result)  # Convert JS buffer → Python bytes
+    # --- Create JS FileReader ---
+    reader = window.FileReader()
+
+    # --- Preview callback ---
+    def on_preview_load(evt):
+        preview_img = document.getElementById('preview')
+        preview_img.src = evt.target.result   # <-- preview now works
+        preview_img.style.display = 'block'
+
+    # --- Raw bytes callback ---
+    def on_bytes_load(evt):
+        binary = window.Uint8Array.new(evt.target.result)
+        image_bytes = bytes(binary)
+
+        # run classifier
         category = fake_classifier(image_bytes)
         document.getElementById('result').innerText = f"Predicted category: {category}"
 
-    reader.onload = create_proxy(onload)
-    reader.readAsArrayBuffer(file)
+    # Connect callbacks
+    reader.onload = create_proxy(on_preview_load)
+    reader.readAsDataURL(file)  # for preview
 
-# Connect file upload event to handler
-document.getElementById('imageInput').addEventListener('change', create_proxy(handle_image_change))
-  </py-script>
+    reader2 = window.FileReader()
+    reader2.onload = create_proxy(on_bytes_load)
+    reader2.readAsArrayBuffer(file)  # for raw bytes
+
+# Attach listener
+file_input = document.getElementById('file-upload')
+file_input.addEventListener('change', create_proxy(handle_file_upload))
+</py-script>
+
 
 </body>
 </html>
