@@ -4,60 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Detection</title>
+
+  <!-- Core PyScript + CSS -->
   <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css"/>
   <script type="module" src="https://pyscript.net/releases/2025.11.2/core.js"></script>
+
+  <!-- Custom styling -->
   <link rel="stylesheet" href="style.css">
-  <style>
-    #preview {
-      max-width: 400px;
-      max-height: 400px;
-      display: none;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-    }
-    #result {
-      font-size: 1.2em;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-  </style>
 </head>
+
 <body>
   <header>
     <h1>Wheat Plant Detection</h1>
-    <p>Use this AI to classify your wheat plant into one of [x] categories: [catgories].</p>
+    <!-- Clear description of what the app does -->
+    <p>Use this AI to classify your wheat plant into one of [x] categories: [categories].</p>
   </header>
 
   <div class="upload-section">
 
-  <div class="button-row">
-    <label for="imageInput" class="upload-label">
-      <span>📷 Choose Image</span>
-    </label>
+    <!-- Buttons grouped together -->
+    <div class="button-row">
+      <label for="imageInput" class="upload-label">
+        <span>📷 Choose Image</span>
+      </label>
 
-    <button class="upload-btn">Classify</button>
+      <button class="upload-btn">Classify</button>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="imageInput" accept="image/*" style="display:none;">
+
+    <!-- Image preview -->
+    <div id="preview-container">
+      <img id="preview" src="#" alt="Image Preview" style="display:none;">
+    </div>
+
   </div>
 
-  <input type="file" id="imageInput" accept="image/*" style="display:none;">
-
-  <div id="preview-container">
-    <img id="preview" src="#" alt="Image Preview" style="display:none;">
-  </div>
-  </div>
+  <!-- Classification result output -->
+  <div id="result" class="result-badge"></div>
 
   <py-script>
-from js import document
+from js import document, window
 from pyodide.ffi import create_proxy
 
-# --- Define your own categories here ---
+# Categories the model predicts
 CATEGORIES = ['Healthy', 'Disease A', 'Disease B']
 
+# Placeholder classifier for now
 def fake_classifier(image_bytes):
-    # This is placeholder logic.
-    # Replace this with your actual image classification logic!
     import random
     return random.choice(CATEGORIES)
 
+# Runs when an image is uploaded
 def handle_image_change(event):
     file = event.target.files[0]
     if not file:
@@ -65,23 +64,24 @@ def handle_image_change(event):
         document.getElementById('result').innerText = ''
         return
     
-    # Preview image in <img>
+    # Load preview in the <img> element
     img_url = window.URL.createObjectURL(file)
     document.getElementById('preview').src = img_url
     document.getElementById('preview').style.display = 'block'
 
-    # Read image bytes and classify (simulate here -- replace with real model)
+    # Read the file bytes and classify it
     reader = window.FileReader.new()
     def onload(ev):
-        # Get bytes from JS ArrayBuffer
-        image_bytes = bytes(reader.result)
+        image_bytes = bytes(reader.result)  # Convert JS buffer → Python bytes
         category = fake_classifier(image_bytes)
         document.getElementById('result').innerText = f"Predicted category: {category}"
+
     reader.onload = create_proxy(onload)
     reader.readAsArrayBuffer(file)
 
-# Attach Python event handler to JS
+# Connect file upload event to handler
 document.getElementById('imageInput').addEventListener('change', create_proxy(handle_image_change))
   </py-script>
+
 </body>
 </html>
