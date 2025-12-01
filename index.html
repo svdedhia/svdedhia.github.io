@@ -45,12 +45,21 @@
 <py-script>
 import js
 from pyscript import when
-import numpy as np
-from PIL import Image
 import io
 import base64
 
 selected_file = None
+
+# Load packages first
+async def main():
+    await pyodide.loadPackage("numpy")
+    await pyodide.loadPackage("pillow")
+    import numpy as np
+    from PIL import Image
+    print(np.arange(5))
+
+# Run main to load packages
+asyncio.create_task(main())
 
 @when("change", "#imageInput")
 def preview_image(event):
@@ -70,11 +79,13 @@ def preview_image(event):
 
 # Preprocess image and send to JS
 def preprocess_for_onnx(image_bytes):
+    import numpy as np
+    from PIL import Image
+
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((160,160))  # match ONNX model input
+    img = img.resize((160, 160))  # match ONNX model input
     arr = np.array(img).astype(np.float32) / 255.0
     arr = np.expand_dims(arr, 0)  # batch dim
-    # Flatten to send as JS Float32Array
     flat = arr.flatten().tolist()
     return flat
 </py-script>
