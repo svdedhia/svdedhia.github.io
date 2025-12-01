@@ -47,30 +47,29 @@ import js
 from pyscript import when
 import io
 import base64
-import micropip
+import asyncio
 
 selected_file = None
 np = None
 Image = None
 
-# Install packages and import them
-async def setup_packages():
-    global np, Image
-    await micropip.install("numpy")
-    await micropip.install("Pillow")
-    import numpy as np_module
-    from PIL import Image as Image_module
-    np = np_module
-    Image = Image_module
-    print("Packages loaded:", np.__name__, Image.__name__)
+# Load micropip first
+await pyodide.loadPackage("micropip")
+import micropip
 
-# Run package setup
-import asyncio
-asyncio.create_task(setup_packages())
+# Install numpy and pillow
+await micropip.install("numpy")
+await micropip.install("Pillow")
+
+# Import packages after installing
+import numpy as np_module
+from PIL import Image as Image_module
+np = np_module
+Image = Image_module
+print("Packages loaded:", np.__name__, Image.__name__)
 
 # Preprocess image for ONNX
 def preprocess_for_onnx(image_bytes):
-    global np, Image
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize((160, 160))  # match ONNX input
     arr = np.array(img).astype(np.float32) / 255.0
@@ -95,7 +94,6 @@ def preview_image(event):
         img.style.display = "block"
 
         # Preprocess automatically
-        # Convert base64 to bytes
         header, data = e.target.result.split(",", 1)
         image_bytes = base64.b64decode(data)
         flat_array = preprocess_for_onnx(image_bytes)
@@ -104,9 +102,6 @@ def preview_image(event):
     reader.onload = on_load
     reader.readAsDataURL(selected_file)
 </py-script>
-
-<input type="file" id="imageInput">
-<img id="preview" style="display:none; max-width:200px; margin-top:10px;">
 
 <script>
 const categories = [
