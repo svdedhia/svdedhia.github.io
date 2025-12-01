@@ -4,78 +4,139 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Detection</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.3.0/dist/tf.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
   <style>
-    #preview { max-width: 300px; max-height: 300px; display: none; }
-    #result { margin-top: 10px; font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #e6f4ea;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+
+    header h1 {
+      color: #2b7a0b;
+    }
+
+    .upload-section {
+      margin: 20px auto;
+      padding: 20px;
+      border: 2px solid #a8d5a2;
+      border-radius: 10px;
+      background-color: #f0fff4;
+      display: inline-block;
+    }
+
+    .upload-label, .upload-btn {
+      background-color: #2b7a0b;
+      color: white;
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .upload-label:hover, .upload-btn:hover {
+      background-color: #1e5007;
+    }
+
+    #preview {
+      margin-top: 10px;
+      max-width: 300px;
+      max-height: 300px;
+      border: 2px solid #a8d5a2;
+      border-radius: 5px;
+    }
+
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #2b7a0b;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #d0efd0;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
 
-<h1>Wheat Plant Detection</h1>
-<input type="file" id="imageInput" accept="image/*">
-<button id="classifyBtn">Classify</button>
-<br>
-<img id="preview">
-<div id="result"></div>
+  <header>
+    <h1>Wheat Plant Detection</h1>
+    <p>Classify your wheat plant into one of 7 categories.</p>
+  </header>
 
-<script>
-  const categories = [
-    'Rust','Pests','Mildew','Blight_Spot',
-    'Smut_Rot','Fusarium_Blast','Healthy'
-  ];
+  <div class="upload-section">
+    <label for="imageInput" class="upload-label">Choose Image</label>
+    <input type="file" id="imageInput" accept="image/*" style="display:none;">
+    <button id="classifyBtn" class="upload-btn">Classify</button>
+    <div>
+      <img id="preview" style="display:none;">
+    </div>
+  </div>
 
-  let model;
-  let selectedFile;
+  <div id="result"></div>
 
-  // Load the model from same folder
-  async function loadModel() {
-    model = await tf.loadLayersModel('model.json');
-    console.log("Model loaded!");
-  }
-  loadModel();
+  <script>
+    let model;
+    const categories = [
+      'Rust', 'Pests', 'Mildew', 'Blight_Spot',
+      'Smut_Rot', 'Fusarium_Blast', 'Healthy'
+    ];
 
-  // Preview selected image
-  const imageInput = document.getElementById("imageInput");
-  const preview = document.getElementById("preview");
+    const preview = document.getElementById("preview");
+    const resultDiv = document.getElementById("result");
+    let selectedFile;
 
-  imageInput.addEventListener("change", (event) => {
-    selectedFile = event.target.files[0];
-    if (!selectedFile) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      preview.src = e.target.result;
-      preview.style.display = "block";
+    // Load TFJS model
+    async function loadModel() {
+      model = await tf.loadLayersModel('model.json'); // must match your JSON filename
+      console.log("Model loaded!");
     }
-    reader.readAsDataURL(selectedFile);
-  });
+    loadModel();
 
-  // Classify image
-  const classifyBtn = document.getElementById("classifyBtn");
-  const resultDiv = document.getElementById("result");
+    // Preview image
+    document.getElementById("imageInput").addEventListener("change", (event) => {
+      selectedFile = event.target.files[0];
+      if (!selectedFile) return;
 
-  classifyBtn.addEventListener("click", async () => {
-    if (!selectedFile) {
-      resultDiv.innerText = "No image selected!";
-      return;
-    }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.style.display = "block";
+        resultDiv.innerText = "";
+      };
+      reader.readAsDataURL(selectedFile);
+    });
 
-    const img = new Image();
-    img.src = preview.src;
-    img.onload = async () => {
-      let tensor = tf.browser.fromPixels(img)
-                  .resizeNearestNeighbor([160, 160])
-                  .toFloat()
-                  .div(255.0)
-                  .expandDims(0);
+    // Classify image
+    document.getElementById("classifyBtn").addEventListener("click", async () => {
+      if (!selectedFile || !model) {
+        resultDiv.innerText = "Select an image and wait for the model to load.";
+        return;
+      }
 
-      const predictions = model.predict(tensor);
-      const predIndex = predictions.argMax(-1).dataSync()[0];
-      resultDiv.innerText = `Predicted: ${categories[predIndex]}`;
-    }
-  });
-</script>
+      const img = new Image();
+      img.src = preview.src;
+      img.onload = async () => {
+        let tensor = tf.browser.fromPixels(img)
+                      .resizeNearestNeighbor([160, 160]) // match your model input
+                      .toFloat()
+                      .div(255.0)
+                      .expandDims(0); // batch dimension
+
+        const predictions = model.predict(tensor);
+        const predIndex = predictions.argMax(-1).dataSync()[0];
+        resultDiv.innerText = `Predicted: ${categories[predIndex]}`;
+      };
+    });
+  </script>
 
 </body>
 </html>
