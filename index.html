@@ -1,8 +1,36 @@
-<input type="file" id="imageInput" accept="image/*" style="display:none;">
-<img id="preview" style="display:none; max-width:300px; max-height:300px;">
-<button id="classifyBtn">Classify</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheat Plant Detection</title>
+
+  <!-- ONNX Runtime Web -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    .upload-section { margin-bottom: 20px; }
+    #preview { display: none; max-width: 300px; max-height: 300px; margin-top: 10px; }
+    #result { margin-top: 20px; font-weight: bold; font-size: 1.2em; }
+    .upload-label, .upload-btn { padding: 10px 20px; margin-right: 10px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
+    .upload-btn { background-color: #2196F3; }
+  </style>
+</head>
+<body>
+
+<h1>Wheat Plant Detection</h1>
+<p>Use this AI to classify your wheat plant into one of 7 categories.</p>
+
+<div class="upload-section">
+  <label for="imageInput" class="upload-label">Choose Image</label>
+  <button id="classifyBtn" class="upload-btn">Classify</button>
+  <input type="file" id="imageInput" accept="image/*" style="display:none;">
+  <img id="preview">
+</div>
+
 <div id="result"></div>
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <script>
 const categories = [
@@ -13,6 +41,7 @@ const categories = [
 let session;
 async function loadModel() {
     session = await ort.InferenceSession.create('wheat_mobilenet.onnx');
+    console.log("ONNX model loaded");
 }
 loadModel();
 
@@ -41,9 +70,8 @@ async function preprocessImage(file) {
             const ctx = canvas.getContext("2d");
             ctx.drawImage(img, 0, 0, 160, 160);
 
-            // Get pixel data and normalize
             const imageData = ctx.getImageData(0, 0, 160, 160);
-            const data = imageData.data; // RGBA
+            const data = imageData.data;
 
             const floatData = new Float32Array(160*160*3);
             let j = 0;
@@ -51,7 +79,6 @@ async function preprocessImage(file) {
                 floatData[j++] = data[i] / 255.0;     // R
                 floatData[j++] = data[i+1] / 255.0;   // G
                 floatData[j++] = data[i+2] / 255.0;   // B
-                // skip alpha channel
             }
             resolve(floatData);
         };
@@ -71,7 +98,10 @@ document.getElementById("classifyBtn").addEventListener("click", async () => {
     const outputMap = await session.run({ input: inputTensor });
     const output = outputMap.output.data;
     const predClass = output.indexOf(Math.max(...output));
+
     document.getElementById("result").innerText = `Predicted: ${categories[predClass]}`;
 });
 </script>
 
+</body>
+</html>
