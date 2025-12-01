@@ -1,110 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wheat Plant Detection</title>
-
-  <link rel="stylesheet" href="https://pyscript.net/releases/2025.11.2/core.css"/>
-  <script type="module" src="https://pyscript.net/releases/2025.11.2/core.js"></script>
-
-  <!-- ONNX Runtime Web -->
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-
-  <link rel="stylesheet" href="style.css">
-
-  <script type="py-config">
-  {
-    "permissions": ["readFiles"]
-  }
-  </script>
-  <py-config>
-    packages = ["numpy", "pandas"]
-  </py-config>
-</head>
-<body>
-
-<header>
-  <h1>Wheat Plant Detection</h1>
-  <p>Use this AI to classify your wheat plant into one of 7 categories.</p>
-</header>
-
-<div class="upload-section">
-  <div class="button-row">
-    <label for="imageInput" class="upload-label">Choose Image</label>
-    <button id="classifyBtn" class="upload-btn">Classify</button>
-  </div>
-
-  <input type="file" id="imageInput" accept="image/*" style="display:none;">
-
-  <div id="preview-container">
-    <img id="preview" style="display:none; max-width:300px; max-height:300px;">
-  </div>
-</div>
-
-<div id="result" class="result-badge"></div>
-
-<!-- PyScript for preprocessing -->
-<py-script>
-import js
-from pyscript import when
-import io
-import base64
-import asyncio
-
-selected_file = None
-np = None
-Image = None
-
-# Load micropip first
-await pyodide.loadPackage("micropip")
-import micropip
-
-# Install numpy and pillow
-await micropip.install("numpy")
-await micropip.install("Pillow")
-
-# Import packages after installing
-import numpy as np_module
-from PIL import Image as Image_module
-np = np_module
-Image = Image_module
-print("Packages loaded:", np.__name__, Image.__name__)
-
-# Preprocess image for ONNX
-def preprocess_for_onnx(image_bytes):
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((160, 160))  # match ONNX input
-    arr = np.array(img).astype(np.float32) / 255.0
-    arr = np.expand_dims(arr, 0)  # add batch dimension
-    return arr.flatten().tolist()
-
-# Handle file input change
-@when("change", "#imageInput")
-def preview_image(event):
-    global selected_file
-    selected_file = event.target.files.item(0)
-    if not selected_file:
-        js.console.log("No file received.")
-        return
-
-    reader = js.FileReader.new()
-
-    def on_load(e):
-        # Show preview
-        img = js.document.getElementById("preview")
-        img.src = e.target.result
-        img.style.display = "block"
-
-        # Preprocess automatically
-        header, data = e.target.result.split(",", 1)
-        image_bytes = base64.b64decode(data)
-        flat_array = preprocess_for_onnx(image_bytes)
-        js.console.log("Preprocessed array length:", len(flat_array))
-
-    reader.onload = on_load
-    reader.readAsDataURL(selected_file)
-</py-script>
+<input type="file" id="imageInput" accept="image/*" style="display:none;">
+<img id="preview" style="display:none; max-width:300px; max-height:300px;">
+<button id="classifyBtn">Classify</button>
+<div id="result"></div>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
 <script>
 const categories = [
@@ -118,30 +16,62 @@ async function loadModel() {
 }
 loadModel();
 
+let selectedFile;
+document.getElementById("imageInput").addEventListener("change", (event) => {
+    selectedFile = event.target.files[0];
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById("preview");
+        img.src = e.target.result;
+        img.style.display = "block";
+    };
+    reader.readAsDataURL(selectedFile);
+});
+
+// Preprocess image: resize, normalize, flatten
+async function preprocessImage(file) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 160;
+            canvas.height = 160;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, 160, 160);
+
+            // Get pixel data and normalize
+            const imageData = ctx.getImageData(0, 0, 160, 160);
+            const data = imageData.data; // RGBA
+
+            const floatData = new Float32Array(160*160*3);
+            let j = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                floatData[j++] = data[i] / 255.0;     // R
+                floatData[j++] = data[i+1] / 255.0;   // G
+                floatData[j++] = data[i+2] / 255.0;   // B
+                // skip alpha channel
+            }
+            resolve(floatData);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+}
+
 document.getElementById("classifyBtn").addEventListener("click", async () => {
-    if (!selected_file) {
+    if (!selectedFile) {
         document.getElementById("result").innerText = "No image selected!";
         return;
     }
 
-    // Get image bytes from PyScript
-    const buf = await selected_file.arrayBuffer();
-    const uint8 = new Uint8Array(buf);
+    const inputTensorData = await preprocessImage(selectedFile);
+    const inputTensor = new ort.Tensor('float32', inputTensorData, [1,160,160,3]);
 
-    // Call PyScript preprocessing
-    const preprocessed = await pyodide.runPythonAsync(`
-import io
-from js import uint8
-from __main__ import preprocess_for_onnx
-preprocess_for_onnx(bytes(uint8.to_py()))
-`);
-
-    const inputTensor = new ort.Tensor('float32', new Float32Array(preprocessed), [1,160,160,3]);
-    const output = await session.run({input: inputTensor});
-    const predClass = output.output.data.indexOf(Math.max(...output.output.data));
+    const outputMap = await session.run({ input: inputTensor });
+    const output = outputMap.output.data;
+    const predClass = output.indexOf(Math.max(...output));
     document.getElementById("result").innerText = `Predicted: ${categories[predClass]}`;
 });
 </script>
 
-</body>
-</html>
