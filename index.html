@@ -56,7 +56,7 @@ def classifier(image_bytes: bytes):
 @when("change", "#imageInput")
 def preview_image(event):
     global selected_file
-    selected_file = event.target.files[0]
+    selected_file = event.target.files.item(0)
 
     if not selected_file:
         return
