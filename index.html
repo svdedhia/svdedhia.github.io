@@ -10,6 +10,7 @@
 
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <header>
     <h1>Wheat Plant Detection</h1>
@@ -31,38 +32,54 @@
 
   <div id="result" class="result-badge"></div>
 
-<py-script output="none">
-# Python code goes here
-import asyncio
-import random
+  <!-- PyScript -->
+  <py-script>
+import js
 from pyscript import when
+import random
+import asyncio
 
-categories = ['Rust', 'Pests', 'Mildew', 'Blight_Spot', 'Smut_Rot', 'Fusarium_Blast', 'Healthy']
+# categories
+categories = [
+    'Rust', 'Pests', 'Mildew', 'Blight_Spot',
+    'Smut_Rot', 'Fusarium_Blast', 'Healthy'
+]
+
 selected_file = None
 
-def classifier(image_bytes):
+# mock classifier
+def classifier(image_bytes: bytes):
     return random.choice(categories)
 
+# → Handle image preview
 @when("change", "#imageInput")
 async def preview_image(event):
     global selected_file
     selected_file = event.target.files[0]
     if not selected_file:
         return
+
     data_url = await selected_file.toDataURL()
-    preview = document.getElementById("preview")
+    preview = js.document.getElementById("preview")
     preview.src = data_url
     preview.style.display = "block"
 
+# → Handle classification button press
 @when("click", "#classifyBtn")
 async def classify_image(event):
+    global selected_file
     if not selected_file:
-        document.getElementById("result").innerText = "No image selected!"
+        js.document.getElementById("result").innerText = "No image selected!"
         return
-    array_buffer = await selected_file.arrayBuffer()
-    image_bytes = bytes(array_buffer.to_bytes())
+
+    # Convert JS ArrayBuffer → Python bytes
+    buf = await selected_file.arrayBuffer()
+    uint8 = js.Uint8Array.new(buf)     # JS typed array
+    image_bytes = bytes(uint8.to_py()) # convert to Python bytes
+
     category = classifier(image_bytes)
-    document.getElementById("result").innerText = f"Predicted: {category}"
-</py-script>
+    js.document.getElementById("result").innerText = f"Predicted: {category}"
+  </py-script>
+
 </body>
 </html>
