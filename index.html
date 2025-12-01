@@ -43,26 +43,28 @@
 
 <!-- PyScript for preprocessing -->
 <py-script>
-import js
-from pyscript import when
-import io
-import base64
-import asyncio
-selected_file = None
-
-# Load packages first
-async def main():
+    import js
+    from pyscript import when
+    import io
+    import base64
+    import asyncio
+    import pyodide
+  
+  selected_file = None
+  
+  # Load packages first
+  async def main():
     await pyodide.loadPackage("numpy")
     await pyodide.loadPackage("pillow")
     import numpy as np
     from PIL import Image
     print(np.arange(5))
 
-# Run main to load packages
-asyncio.create_task(main())
-
-@when("change", "#imageInput")
-def preview_image(event):
+  # Run main to load packages
+  asyncio.create_task(main())
+  
+  @when("change", "#imageInput")
+  def preview_image(event):
     global selected_file
     selected_file = event.target.files.item(0)
     if not selected_file:
@@ -77,8 +79,8 @@ def preview_image(event):
     reader.onload = on_load
     reader.readAsDataURL(selected_file)
 
-# Preprocess image and send to JS
-def preprocess_for_onnx(image_bytes):
+  # Preprocess image and send to JS
+  def preprocess_for_onnx(image_bytes):
     import numpy as np
     from PIL import Image
 
