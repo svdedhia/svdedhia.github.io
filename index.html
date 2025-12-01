@@ -4,82 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Detection</title>
-
-  <!-- TensorFlow.js -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.9.0/dist/tf.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    img { max-width: 300px; max-height: 300px; margin-top: 10px; }
-    .result { margin-top: 20px; font-size: 1.2em; font-weight: bold; }
-    .upload-btn { margin-left: 10px; }
+    #preview { max-width: 300px; max-height: 300px; display: none; }
+    #result { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <h1>Wheat Plant Detection</h1>
-  <p>Upload an image of a wheat plant and classify it.</p>
+<h1>Wheat Plant Detection</h1>
+<input type="file" id="imageInput" accept="image/*">
+<button id="classifyBtn">Classify</button>
+<br>
+<img id="preview">
+<div id="result"></div>
 
-  <input type="file" id="imageInput" accept="image/*">
-  <button id="classifyBtn">Classify</button>
+<script>
+  const categories = [
+    'Rust','Pests','Mildew','Blight_Spot',
+    'Smut_Rot','Fusarium_Blast','Healthy'
+  ];
 
-  <div>
-    <img id="preview" style="display:none;">
-  </div>
+  let model;
+  let selectedFile;
 
-  <div class="result" id="result"></div>
+  // Load the model from same folder
+  async function loadModel() {
+    model = await tf.loadLayersModel('model.json');
+    console.log("Model loaded!");
+  }
+  loadModel();
 
-  <script>
-    let selectedFile = null;
-    const categories = [
-      'Rust', 'Pests', 'Mildew', 'Blight_Spot',
-      'Smut_Rot', 'Fusarium_Blast', 'Healthy'
-    ];
-    let model;
+  // Preview selected image
+  const imageInput = document.getElementById("imageInput");
+  const preview = document.getElementById("preview");
 
-    // Load the TFJS model
-    async function loadModel() {
-      model = await tf.loadLayersModel('model.json'); // make sure model.json and .bin shards are in same folder
-      console.log("Model loaded!");
+  imageInput.addEventListener("change", (event) => {
+    selectedFile = event.target.files[0];
+    if (!selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    }
+    reader.readAsDataURL(selectedFile);
+  });
+
+  // Classify image
+  const classifyBtn = document.getElementById("classifyBtn");
+  const resultDiv = document.getElementById("result");
+
+  classifyBtn.addEventListener("click", async () => {
+    if (!selectedFile) {
+      resultDiv.innerText = "No image selected!";
+      return;
     }
 
-    loadModel();
+    const img = new Image();
+    img.src = preview.src;
+    img.onload = async () => {
+      let tensor = tf.browser.fromPixels(img)
+                  .resizeNearestNeighbor([160, 160])
+                  .toFloat()
+                  .div(255.0)
+                  .expandDims(0);
 
-    // Image preview
-    document.getElementById("imageInput").addEventListener("change", (event) => {
-      selectedFile = event.target.files[0];
-      if (!selectedFile) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = document.getElementById("preview");
-        img.src = e.target.result;
-        img.style.display = "block";
-      };
-      reader.readAsDataURL(selectedFile);
-    });
-
-    // Classification
-    document.getElementById("classifyBtn").addEventListener("click", async () => {
-      if (!selectedFile) {
-        document.getElementById("result").innerText = "No image selected!";
-        return;
-      }
-
-      const img = document.getElementById("preview");
-      const tensor = tf.browser.fromPixels(img)
-                      .resizeNearestNeighbor([160, 160]) // match model input size
-                      .toFloat()
-                      .div(255.0)
-                      .expandDims();
-
-      const prediction = model.predict(tensor);
-      const predClass = prediction.argMax(-1).dataSync()[0];
-
-      document.getElementById("result").innerText = `Predicted: ${categories[predClass]}`;
-    });
-  </script>
+      const predictions = model.predict(tensor);
+      const predIndex = predictions.argMax(-1).dataSync()[0];
+      resultDiv.innerText = `Predicted: ${categories[predIndex]}`;
+    }
+  });
+</script>
 
 </body>
 </html>
-
