@@ -42,55 +42,47 @@
 <div id="result" class="result-badge"></div>
 
 <!-- PyScript for preprocessing -->
-<py-script>
-  import js
-  from pyscript import when
-  import io
-  import base64
-  import asyncio
-  import pyodide
-  
-  selected_file = None
-  
-  # Load packages first
-  async def main():
-    await pyodide.loadPackage("numpy")
-    await pyodide.loadPackage("pillow")
-    import numpy as np
-    from PIL import Image
-    print(np.arange(5))
+<py-env>
+- numpy
+- pillow
+</py-env>
 
-  # Run main to load packages
-  asyncio.create_task(main())
-  
-  @when("change", "#imageInput")
-  def preview_image(event):
+<py-script>
+import js
+from pyscript import when
+import io
+import base64
+import numpy as np
+from PIL import Image
+
+selected_file = None
+
+@when("change", "#imageInput")
+def preview_image(event):
     global selected_file
     selected_file = event.target.files.item(0)
     if not selected_file:
         js.console.log("No file received.")
         return
 
-  reader = js.FileReader.new()
-  def on_load(e):
+    reader = js.FileReader.new()
+
+    def on_load(e):
         img = js.document.getElementById("preview")
         img.src = e.target.result
         img.style.display = "block"
-  reader.onload = on_load
-  reader.readAsDataURL(selected_file)
 
-  # Preprocess image and send to JS
-  def preprocess_for_onnx(image_bytes):
-    import numpy as np
-    from PIL import Image
+    reader.onload = on_load
+    reader.readAsDataURL(selected_file)
 
+def preprocess_for_onnx(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize((160, 160))  # match ONNX model input
     arr = np.array(img).astype(np.float32) / 255.0
     arr = np.expand_dims(arr, 0)  # batch dim
-    flat = arr.flatten().tolist()
-    return flat
+    return arr.flatten().tolist()
 </py-script>
+
 
 <script>
 const categories = [
