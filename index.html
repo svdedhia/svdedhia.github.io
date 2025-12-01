@@ -12,10 +12,17 @@
     body { font-family: Arial, sans-serif; padding: 20px; }
     h1 { margin-bottom: 10px; }
     .upload-section { margin-bottom: 20px; }
-    #preview { display: none; max-width: 300px; max-height: 300px; margin-top: 10px; }
-    #result { margin-top: 20px; font-weight: bold; font-size: 1.2em; }
+    #preview { display: none; max-width: 300px; max-height: 300px; margin-top: 10px; border: 1px solid #ccc; }
+    #result { margin-top: 20px; font-weight: bold; font-size: 1.2em; padding: 10px; border-radius: 5px; display: inline-block; }
     .upload-label, .upload-btn { padding: 10px 20px; margin-right: 10px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
     .upload-btn { background-color: #2196F3; }
+    .Rust { background-color: #f44336; color: white; }
+    .Pests { background-color: #ff9800; color: white; }
+    .Mildew { background-color: #9c27b0; color: white; }
+    .Blight_Spot { background-color: #795548; color: white; }
+    .Smut_Rot { background-color: #607d8b; color: white; }
+    .Fusarium_Blast { background-color: #3f51b5; color: white; }
+    .Healthy { background-color: #4caf50; color: white; }
   </style>
 </head>
 <body>
@@ -59,7 +66,7 @@ document.getElementById("imageInput").addEventListener("change", (event) => {
     reader.readAsDataURL(selectedFile);
 });
 
-// Preprocess image: resize, normalize, flatten
+// Preprocess image for ONNX
 async function preprocessImage(file) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -86,9 +93,12 @@ async function preprocessImage(file) {
     });
 }
 
+// Classify button
 document.getElementById("classifyBtn").addEventListener("click", async () => {
+    const resultDiv = document.getElementById("result");
     if (!selectedFile) {
-        document.getElementById("result").innerText = "No image selected!";
+        resultDiv.innerText = "No image selected!";
+        resultDiv.className = "";
         return;
     }
 
@@ -98,8 +108,11 @@ document.getElementById("classifyBtn").addEventListener("click", async () => {
     const outputMap = await session.run({ input: inputTensor });
     const output = outputMap.output.data;
     const predClass = output.indexOf(Math.max(...output));
+    const predCategory = categories[predClass];
 
-    document.getElementById("result").innerText = `Predicted: ${categories[predClass]}`;
+    // Show result with colored badge
+    resultDiv.innerText = `Predicted: ${predCategory}`;
+    resultDiv.className = predCategory;
 });
 </script>
 
