@@ -12,6 +12,12 @@
 </head>
 
 <body>
+
+  <!-- 🔥 REQUIRED FOR FILE UPLOADS IN PyScript 2025 -->
+  <py-config>
+    permissions = ["readFiles"]
+  </py-config>
+
   <header>
     <h1>Wheat Plant Detection</h1>
     <p>Use this AI to classify your wheat plant into one of 7 categories.</p>
@@ -33,7 +39,6 @@
   <div id="result" class="result-badge"></div>
 
 <py-script>
-# PyScript 2025-compatible script
 import js
 import random
 from pyscript import when
@@ -45,11 +50,9 @@ categories = [
 
 selected_file = None
 
-# Mock classifier for now
 def classifier(image_bytes: bytes):
     return random.choice(categories)
 
-# ---- IMAGE PREVIEW (WORKING) ----
 @when("change", "#imageInput")
 def preview_image(event):
     global selected_file
@@ -58,31 +61,29 @@ def preview_image(event):
     if not selected_file:
         return
 
-    # Use JS FileReader (modern, stable)
-    file_reader = js.FileReader.new()
+    reader = js.FileReader.new()
 
     def on_load(e):
         img = js.document.getElementById("preview")
         img.src = e.target.result
         img.style.display = "block"
 
-    file_reader.onload = on_load
-    file_reader.readAsDataURL(selected_file)
+    reader.onload = on_load
+    reader.readAsDataURL(selected_file)
 
-#classification
 @when("click", "#classifyBtn")
 async def classify_image(event):
     global selected_file
+
     if not selected_file:
         js.document.getElementById("result").innerText = "No image selected!"
         return
 
-    # Convert JS file → Python bytes
-    array_buffer = await selected_file.arrayBuffer()
-    uint8 = js.Uint8Array.new(array_buffer)
+    # JS ArrayBuffer → Python bytes
+    buf = await selected_file.arrayBuffer()
+    uint8 = js.Uint8Array.new(buf)
     image_bytes = bytes(uint8.to_py())
 
-    # Mock classifier
     category = classifier(image_bytes)
     js.document.getElementById("result").innerText = f"Predicted: {category}"
 </py-script>
