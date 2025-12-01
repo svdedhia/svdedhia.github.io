@@ -14,7 +14,7 @@
 <body>
   <header>
     <h1>Wheat Plant Detection</h1>
-    <p>Use this website to classify your wheat plant into one of 7 categories.</p>
+    <p>Use this AI to classify your wheat plant into one of 7 categories.</p>
   </header>
 
   <div class="upload-section">
@@ -32,14 +32,12 @@
 
   <div id="result" class="result-badge"></div>
 
-  <!-- PyScript -->
-  <py-script>
+<py-script>
+# PyScript 2025-compatible script
 import js
-from pyscript import when
 import random
-import asyncio
+from pyscript import when
 
-# categories
 categories = [
     'Rust', 'Pests', 'Mildew', 'Blight_Spot',
     'Smut_Rot', 'Fusarium_Blast', 'Healthy'
@@ -47,24 +45,31 @@ categories = [
 
 selected_file = None
 
-# mock classifier
+# Mock classifier for now
 def classifier(image_bytes: bytes):
     return random.choice(categories)
 
-# → Handle image preview
+# ---- IMAGE PREVIEW (WORKING) ----
 @when("change", "#imageInput")
-async def preview_image(event):
+def preview_image(event):
     global selected_file
     selected_file = event.target.files[0]
+
     if not selected_file:
         return
 
-    data_url = await selected_file.toDataURL()
-    preview = js.document.getElementById("preview")
-    preview.src = data_url
-    preview.style.display = "block"
+    # Use JS FileReader (modern, stable)
+    file_reader = js.FileReader.new()
 
-# → Handle classification button press
+    def on_load(e):
+        img = js.document.getElementById("preview")
+        img.src = e.target.result
+        img.style.display = "block"
+
+    file_reader.onload = on_load
+    file_reader.readAsDataURL(selected_file)
+
+#classification
 @when("click", "#classifyBtn")
 async def classify_image(event):
     global selected_file
@@ -72,14 +77,16 @@ async def classify_image(event):
         js.document.getElementById("result").innerText = "No image selected!"
         return
 
-    # Convert JS ArrayBuffer → Python bytes
-    buf = await selected_file.arrayBuffer()
-    uint8 = js.Uint8Array.new(buf)     # JS typed array
-    image_bytes = bytes(uint8.to_py()) # convert to Python bytes
+    # Convert JS file → Python bytes
+    array_buffer = await selected_file.arrayBuffer()
+    uint8 = js.Uint8Array.new(array_buffer)
+    image_bytes = bytes(uint8.to_py())
 
+    # Mock classifier
     category = classifier(image_bytes)
     js.document.getElementById("result").innerText = f"Predicted: {category}"
-  </py-script>
+</py-script>
 
 </body>
 </html>
+
