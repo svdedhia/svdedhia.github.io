@@ -45,8 +45,13 @@
 
 <py-script>
 import js
-import random
+import numpy as np
+from PIL import Image
+import onnxruntime as ort
 from pyscript import when
+
+# Load ONNX model
+session = ort.InferenceSession("wheat_mobilenet.onnx")
 
 categories = [
     'Rust', 'Pests', 'Mildew', 'Blight_Spot',
@@ -55,35 +60,40 @@ categories = [
 
 selected_file = None
 
+def preprocess_image(image_bytes):
+    # Load image from bytes
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    img = img.resize((160, 160))
+    arr = np.array(img).astype(np.float32) / 255.0
+    arr = np.expand_dims(arr, axis=0)  # batch dimension
+    return arr
 
 def classifier(image_bytes):
-    return random.choice(categories)
+    input_tensor = preprocess_image(image_bytes)
+    input_name = session.get_inputs()[0].name
+    outputs = session.run(None, {input_name: input_tensor})
+    pred_class = np.argmax(outputs[0])
+    return categories[pred_class]
 
 @when("change", "#imageInput")
 def preview_image(event):
     global selected_file
-
-    # MUST use .item() in PyScript 2025
     selected_file = event.target.files.item(0)
-
     if not selected_file:
         js.console.log("No file received.")
         return
 
     reader = js.FileReader.new()
-
     def on_load(e):
         img = js.document.getElementById("preview")
         img.src = e.target.result
         img.style.display = "block"
-
     reader.onload = on_load
     reader.readAsDataURL(selected_file)
 
 @when("click", "#classifyBtn")
 async def classify_image(event):
     global selected_file
-
     if not selected_file:
         js.document.getElementById("result").innerText = "No image selected!"
         return
