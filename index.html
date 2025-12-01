@@ -5,117 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Detection</title>
 
-  <!-- ONNX Runtime Web -->
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
 
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { margin-bottom: 10px; }
-    .upload-section { margin-bottom: 20px; }
-    #preview { display: none; max-width: 300px; max-height: 300px; margin-top: 10px; border: 1px solid #ccc; }
-    #result { margin-top: 20px; font-weight: bold; font-size: 1.2em; padding: 10px; border-radius: 5px; display: inline-block; }
-    .upload-label, .upload-btn { padding: 10px 20px; margin-right: 10px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; }
-    .upload-btn { background-color: #2196F3; }
-    .Rust { background-color: #f44336; color: white; }
-    .Pests { background-color: #ff9800; color: white; }
-    .Mildew { background-color: #9c27b0; color: white; }
-    .Blight_Spot { background-color: #795548; color: white; }
-    .Smut_Rot { background-color: #607d8b; color: white; }
-    .Fusarium_Blast { background-color: #3f51b5; color: white; }
-    .Healthy { background-color: #4caf50; color: white; }
+    img { max-width: 300px; max-height: 300px; margin-top: 10px; }
+    .result { margin-top: 20px; font-size: 1.2em; font-weight: bold; }
+    .upload-btn { margin-left: 10px; }
   </style>
 </head>
 <body>
 
-<h1>Wheat Plant Detection</h1>
-<p>Use this AI to classify your wheat plant into one of 7 categories.</p>
+  <h1>Wheat Plant Detection</h1>
+  <p>Upload an image of a wheat plant and classify it.</p>
 
-<div class="upload-section">
-  <label for="imageInput" class="upload-label">Choose Image</label>
-  <button id="classifyBtn" class="upload-btn">Classify</button>
-  <input type="file" id="imageInput" accept="image/*" style="display:none;">
-  <img id="preview">
-</div>
+  <input type="file" id="imageInput" accept="image/*">
+  <button id="classifyBtn">Classify</button>
 
-<div id="result"></div>
+  <div>
+    <img id="preview" style="display:none;">
+  </div>
 
-<script>
-const categories = [
-  'Rust', 'Pests', 'Mildew', 'Blight_Spot',
-  'Smut_Rot', 'Fusarium_Blast', 'Healthy'
-];
+  <div class="result" id="result"></div>
 
-let session;
-async function loadModel() {
-    session = await ort.InferenceSession.create('wheat_mobilenet.onnx');
-    console.log("ONNX model loaded");
-}
-loadModel();
+  <script>
+    let selectedFile = null;
+    const categories = [
+      'Rust', 'Pests', 'Mildew', 'Blight_Spot',
+      'Smut_Rot', 'Fusarium_Blast', 'Healthy'
+    ];
+    let model;
 
-let selectedFile = null;
+    // Load the TFJS model
+    async function loadModel() {
+      model = await tf.loadLayersModel('model.json'); // make sure model.json and .bin shards are in same folder
+      console.log("Model loaded!");
+    }
 
-// Handle image selection and preview
-document.getElementById("imageInput").addEventListener("change", (event) => {
-    selectedFile = event.target.files[0];
-    if (!selectedFile) return;
+    loadModel();
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
+    // Image preview
+    document.getElementById("imageInput").addEventListener("change", (event) => {
+      selectedFile = event.target.files[0];
+      if (!selectedFile) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
         const img = document.getElementById("preview");
         img.src = e.target.result;
         img.style.display = "block";
-    };
-    reader.readAsDataURL(selectedFile);
-});
-
-// Preprocess image for ONNX: NCHW, normalized
-async function preprocessImage(file) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = 160;
-            canvas.height = 160;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, 160, 160);
-
-            const imageData = ctx.getImageData(0, 0, 160, 160);
-            const data = imageData.data;
-
-            const floatData = new Float32Array(3*160*160);
-            let r=0, g=160*160, b=2*160*160; // channel offsets
-
-            for (let i = 0; i < data.length; i += 4) {
-                floatData[r++] = (data[i]/255.0 - 0.485)/0.229;     // R
-                floatData[g++] = (data[i+1]/255.0 - 0.456)/0.224;   // G
-                floatData[b++] = (data[i+2]/255.0 - 0.406)/0.225;   // B
-            }
-            resolve(floatData);
-        };
-        img.src = URL.createObjectURL(file);
+      };
+      reader.readAsDataURL(selectedFile);
     });
-}
 
-// Classify button
-document.getElementById("classifyBtn").addEventListener("click", async () => {
-    if (!selectedFile) {
-        // Do nothing if no image is selected
+    // Classification
+    document.getElementById("classifyBtn").addEventListener("click", async () => {
+      if (!selectedFile) {
+        document.getElementById("result").innerText = "No image selected!";
         return;
-    }
+      }
 
-    const inputTensorData = await preprocessImage(selectedFile);
-    const inputTensor = new ort.Tensor('float32', inputTensorData, [1,3,160,160]);
+      const img = document.getElementById("preview");
+      const tensor = tf.browser.fromPixels(img)
+                      .resizeNearestNeighbor([160, 160]) // match model input size
+                      .toFloat()
+                      .div(255.0)
+                      .expandDims();
 
-    const outputMap = await session.run({ input: inputTensor });
-    const output = outputMap.output.data;
-    const predClass = output.indexOf(Math.max(...output));
-    const predCategory = categories[predClass];
+      const prediction = model.predict(tensor);
+      const predClass = prediction.argMax(-1).dataSync()[0];
 
-    const resultDiv = document.getElementById("result");
-    resultDiv.innerText = `Predicted: ${predCategory}`;
-    resultDiv.className = predCategory;
-});
-</script>
+      document.getElementById("result").innerText = `Predicted: ${categories[predClass]}`;
+    });
+  </script>
 
 </body>
 </html>
