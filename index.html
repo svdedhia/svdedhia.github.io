@@ -50,8 +50,9 @@ categories = [
 
 selected_file = None
 
-def classifier(image_bytes: bytes):
-    return random.choice(categories)
+def classifier(image_bytes):
+  image_bytes=io.imread(image_bytes)
+  return random.choice(categories)
 
 @when("change", "#imageInput")
 def preview_image(event):
