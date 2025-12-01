@@ -52,7 +52,9 @@ async function loadModel() {
 }
 loadModel();
 
-let selectedFile;
+let selectedFile = null;
+
+// Handle image selection and preview
 document.getElementById("imageInput").addEventListener("change", (event) => {
     selectedFile = event.target.files[0];
     if (!selectedFile) return;
@@ -66,7 +68,7 @@ document.getElementById("imageInput").addEventListener("change", (event) => {
     reader.readAsDataURL(selectedFile);
 });
 
-// Preprocess image for ONNX
+// Preprocess image for ONNX: NCHW, normalized
 async function preprocessImage(file) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -80,12 +82,13 @@ async function preprocessImage(file) {
             const imageData = ctx.getImageData(0, 0, 160, 160);
             const data = imageData.data;
 
-            const floatData = new Float32Array(160*160*3);
-            let j = 0;
+            const floatData = new Float32Array(3*160*160);
+            let r=0, g=160*160, b=2*160*160; // channel offsets
+
             for (let i = 0; i < data.length; i += 4) {
-                floatData[j++] = data[i] / 255.0;     // R
-                floatData[j++] = data[i+1] / 255.0;   // G
-                floatData[j++] = data[i+2] / 255.0;   // B
+                floatData[r++] = (data[i]/255.0 - 0.485)/0.229;     // R
+                floatData[g++] = (data[i+1]/255.0 - 0.456)/0.224;   // G
+                floatData[b++] = (data[i+2]/255.0 - 0.406)/0.225;   // B
             }
             resolve(floatData);
         };
@@ -95,22 +98,20 @@ async function preprocessImage(file) {
 
 // Classify button
 document.getElementById("classifyBtn").addEventListener("click", async () => {
-    const resultDiv = document.getElementById("result");
     if (!selectedFile) {
-        resultDiv.innerText = "No image selected!";
-        resultDiv.className = "";
+        // Do nothing if no image is selected
         return;
     }
 
     const inputTensorData = await preprocessImage(selectedFile);
-    const inputTensor = new ort.Tensor('float32', inputTensorData, [1,160,160,3]);
+    const inputTensor = new ort.Tensor('float32', inputTensorData, [1,3,160,160]);
 
     const outputMap = await session.run({ input: inputTensor });
     const output = outputMap.output.data;
     const predClass = output.indexOf(Math.max(...output));
     const predCategory = categories[predClass];
 
-    // Show result with colored badge
+    const resultDiv = document.getElementById("result");
     resultDiv.innerText = `Predicted: ${predCategory}`;
     resultDiv.className = predCategory;
 });
@@ -118,3 +119,4 @@ document.getElementById("classifyBtn").addEventListener("click", async () => {
 
 </body>
 </html>
+
