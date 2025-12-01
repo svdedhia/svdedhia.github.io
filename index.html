@@ -5,75 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Detection</title>
 
-  <!-- Correct PyScript CSS -->
   <link rel="stylesheet" href="https://pyscript.net/releases/2025.11.2/core.css"/>
-
-  <!-- Correct PyScript core -->
   <script type="module" src="https://pyscript.net/releases/2025.11.2/core.js"></script>
+
+  <!-- ONNX Runtime Web -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
 
-  <!-- Correct PyScript 2025 config -->
   <script type="py-config">
   {
     "permissions": ["readFiles"]
   }
   </script>
 </head>
-
 <body>
 
-  <header>
-    <h1>Wheat Plant Detection</h1>
-    <p>Use this AI to classify your wheat plant into one of 7 categories.</p>
-  </header>
+<header>
+  <h1>Wheat Plant Detection</h1>
+  <p>Use this AI to classify your wheat plant into one of 7 categories.</p>
+</header>
 
-  <div class="upload-section">
-    <div class="button-row">
-      <label for="imageInput" class="upload-label">Choose Image</label>
-      <button id="classifyBtn" class="upload-btn">Classify</button>
-    </div>
-
-    <input type="file" id="imageInput" accept="image/*" style="display:none;">
-
-    <div id="preview-container">
-      <img id="preview" style="display:none; max-width:300px; max-height:300px;">
-    </div>
+<div class="upload-section">
+  <div class="button-row">
+    <label for="imageInput" class="upload-label">Choose Image</label>
+    <button id="classifyBtn" class="upload-btn">Classify</button>
   </div>
 
-  <div id="result" class="result-badge"></div>
+  <input type="file" id="imageInput" accept="image/*" style="display:none;">
 
+  <div id="preview-container">
+    <img id="preview" style="display:none; max-width:300px; max-height:300px;">
+  </div>
+</div>
+
+<div id="result" class="result-badge"></div>
+
+<!-- PyScript for preprocessing -->
 <py-script>
 import js
+from pyscript import when
 import numpy as np
 from PIL import Image
-import onnxruntime as ort
-from pyscript import when
-
-# Load ONNX model
-session = ort.InferenceSession("wheat_mobilenet.onnx")
-
-categories = [
-    'Rust', 'Pests', 'Mildew', 'Blight_Spot',
-    'Smut_Rot', 'Fusarium_Blast', 'Healthy'
-]
+import io
+import base64
 
 selected_file = None
-
-def preprocess_image(image_bytes):
-    # Load image from bytes
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img = img.resize((160, 160))
-    arr = np.array(img).astype(np.float32) / 255.0
-    arr = np.expand_dims(arr, axis=0)  # batch dimension
-    return arr
-
-def classifier(image_bytes):
-    input_tensor = preprocess_image(image_bytes)
-    input_name = session.get_inputs()[0].name
-    outputs = session.run(None, {input_name: input_tensor})
-    pred_class = np.argmax(outputs[0])
-    return categories[pred_class]
 
 @when("change", "#imageInput")
 def preview_image(event):
@@ -91,20 +68,53 @@ def preview_image(event):
     reader.onload = on_load
     reader.readAsDataURL(selected_file)
 
-@when("click", "#classifyBtn")
-async def classify_image(event):
-    global selected_file
-    if not selected_file:
-        js.document.getElementById("result").innerText = "No image selected!"
-        return
-
-    buf = await selected_file.arrayBuffer()
-    uint8 = js.Uint8Array.new(buf)
-    image_bytes = bytes(uint8.to_py())
-
-    category = classifier(image_bytes)
-    js.document.getElementById("result").innerText = f"Predicted: {category}"
+# Preprocess image and send to JS
+def preprocess_for_onnx(image_bytes):
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    img = img.resize((160,160))  # match ONNX model input
+    arr = np.array(img).astype(np.float32) / 255.0
+    arr = np.expand_dims(arr, 0)  # batch dim
+    # Flatten to send as JS Float32Array
+    flat = arr.flatten().tolist()
+    return flat
 </py-script>
+
+<script>
+const categories = [
+  'Rust', 'Pests', 'Mildew', 'Blight_Spot',
+  'Smut_Rot', 'Fusarium_Blast', 'Healthy'
+];
+
+let session;
+async function loadModel() {
+    session = await ort.InferenceSession.create('wheat_mobilenet.onnx');
+}
+loadModel();
+
+document.getElementById("classifyBtn").addEventListener("click", async () => {
+    if (!selected_file) {
+        document.getElementById("result").innerText = "No image selected!";
+        return;
+    }
+
+    // Get image bytes from PyScript
+    const buf = await selected_file.arrayBuffer();
+    const uint8 = new Uint8Array(buf);
+
+    // Call PyScript preprocessing
+    const preprocessed = await pyodide.runPythonAsync(`
+import io
+from js import uint8
+from __main__ import preprocess_for_onnx
+preprocess_for_onnx(bytes(uint8.to_py()))
+`);
+
+    const inputTensor = new ort.Tensor('float32', new Float32Array(preprocessed), [1,160,160,3]);
+    const output = await session.run({input: inputTensor});
+    const predClass = output.output.data.indexOf(Math.max(...output.output.data));
+    document.getElementById("result").innerText = `Predicted: ${categories[predClass]}`;
+});
+</script>
 
 </body>
 </html>
