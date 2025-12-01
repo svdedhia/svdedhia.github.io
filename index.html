@@ -37,11 +37,11 @@ import asyncio
 import random
 from pyscript import when
 
-CATEGORIES = ["Healthy", "Disease A", "Disease B"]
+categories = ['Rust', 'Pests', 'Mildew', 'Blight_Spot', 'Smut_Rot', 'Fusarium_Blast', 'Healthy']
 selected_file = None
 
-def fake_classifier(image_bytes):
-    return random.choice(CATEGORIES)
+def classifier(image_bytes):
+    return random.choice(categories)
 
 @when("change", "#imageInput")
 async def preview_image(event):
@@ -61,7 +61,7 @@ async def classify_image(event):
         return
     array_buffer = await selected_file.arrayBuffer()
     image_bytes = bytes(array_buffer.to_bytes())
-    category = fake_classifier(image_bytes)
+    category = classifier(image_bytes)
     document.getElementById("result").innerText = f"Predicted: {category}"
 </py-script>
 </body>
