@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wheat Plant Detection</title>
+  <title>Wheat Plant Classification</title>
 
-  <!-- TensorFlow.js -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.3.0/dist/tf.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
-  <style>
+  <!-- <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #e6f4ea;
@@ -63,15 +62,16 @@
       background-color: #d0efd0;
       display: inline-block;
     }
-  </style>
+  </style> -->
 </head>
 <body>
 
   <header>
-    <h1>Wheat Plant Detection</h1>
+    <h1>Wheat Plant Classification</h1>
     <p>Classify your wheat plant into one of 7 categories.</p>
   </header>
 
+  <img id>
   <div class="upload-section">
     <label for="imageInput" class="upload-label">Choose Image</label>
     <input type="file" id="imageInput" accept="image/*" style="display:none;">
