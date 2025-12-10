@@ -9,6 +9,7 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import io
+import os
 
 app = Flask(__name__)
 CORS(app) # -> make it accessible from browsers
@@ -16,10 +17,13 @@ CORS(app) # -> make it accessible from browsers
 MODEL_PATH = 'wheat_model_v2.keras'
 model = None
 
-CLASS_NAMES = [
-    "Healthy", "Mildew", "Pests", "Rust", 
-    "Fusarium_Blast", "Smut-Rot", "Blight_Spot"
-]
+CLASS_NAMES = ['Blight_Spot',
+    'Fusarium_Blast',
+    'Healthy',
+    'Mildew',
+    'Pests',
+    'Rust',
+    'Smut_Rot']
 
 # Function to load model
 def load_model():
@@ -27,6 +31,8 @@ def load_model():
     try:
         model = tf.keras.models.load_model(MODEL_PATH, compile=False)
         print("Successfully loaded a model!")
+        print(f"input: {model.input_shape}")
+        print(f"output: {model.output_shape}")
     except Exception as e:
         print(f"Error!: {e}")
 
@@ -37,11 +43,17 @@ def process_img(image):
     img_array = np.array(img)
 
     # RGB - if image doesn't have 3 channel, make it three
-    if img_array.shape[-1] != 4:
+    if img_array.shape[-1] == 4:
         img_array = img_array[:,:, :3]
     
-    img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+    # img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array) # Normalize to -1 to 1, which was wrong to use for application
+    img_array = img_array.astype('float32')
     img_array = np.expand_dims(img_array, axis = 0)
+
+    # Check
+    print(f"Shape after preprocessing: {img_array.shape}")
+    print(f"Range of value: {img_array.min():.2f} - {img_array.max():.2f}")
+    print(f"Data type: {img_array.dtype}")
 
     return img_array
 # # Test image preprocessing
@@ -70,15 +82,23 @@ def predict():
             # Preprocess the image data
             processedImg = process_img(image)
 
-            # Predict
-            pred = model.predict(processedImg)
+            # Predict (Obtain logits)
+            logits = model.predict(processedImg)
+            print(f"Logits: {logits[0]}")
 
-            pred_classIndex = np.argmax(pred[0])
-            confidence = float(pred[0][pred_classIndex])
+            # Convert logits into probability
+            pred = tf.nn.softmax(logits).numpy()
+            print(f"Probability: {pred[0]}")
+            print(f"Sum: {pred[0].sum():.6f}")
+
+            pred_class_index = np.argmax(pred[0])
+            confidence = float(pred[0][pred_class_index])
+            label = CLASS_NAMES[pred_class_index]
 
             return jsonify({
-                # 'Image':
-                'Prediction' : pred
+                'label': label,
+                "class_index": pred_class_index,
+                'confidence': confidence
             })
         
         except Exception as e:
