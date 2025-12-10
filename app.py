@@ -6,17 +6,19 @@ __name__ -> parameter
 from flask import Flask
 from flask_cors import CORS
 import tensorflow as tf
+import numpy as np
+from PIL import Image
 
 app = Flask(__name__)
 CORS(app) # -> make it accessible from browsers
 
-MODEL_PATH = 'wheat_mobilenet_finetuned.h5'
+MODEL_PATH = 'wheat_model_v2.keras'
 model = None
 
 def load_model():
     global model
     try:
-        model = tf.keras.models.load_model(MODEL_PATH)
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
         print("Successfully loaded a model!")
     except Exception as e:
         print(f"Error!: {e}")
