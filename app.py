@@ -117,11 +117,12 @@ def predict():
             
             print(f"All predictions: {all_preds}")
 
-            result =  jsonify({
+            result = {
                 "class_index": pred_class_index,
+                "label" : pred_class,
                 'confidence': confidence,
                 'all_predictions': all_preds
-            })
+            }
 
             print(f"Returning result: {result}")
             return jsonify(result)
