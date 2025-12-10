@@ -91,15 +91,40 @@ def predict():
             print(f"Probability: {pred[0]}")
             print(f"Sum: {pred[0].sum():.6f}")
 
-            pred_class_index = np.argmax(pred[0])
-            confidence = float(pred[0][pred_class_index])
-            label = CLASS_NAMES[pred_class_index]
+            # Get predicted class
+            pred_class_index = int(np.argmax(pred[0]))
+            print(f"Predicted Index: {pred_class_index}")
+            print(f"Number of Classes in CLASS_NAMES: {len(CLASS_NAMES)}")
 
-            return jsonify({
-                'label': label,
+            # Check index validity
+            if pred_class_index >= len(CLASS_NAMES):
+                err_msg = f"Index {pred_class_index} out of range for {len(CLASS_NAMES)}"
+                print(f"Error: {err_msg}")
+                return jsonify({'error' : err_msg}), 500
+            
+            pred_class = CLASS_NAMES[pred_class_index]
+            confidence = float(pred[0][pred_class_index])
+
+            print(f"Predicted class: {pred_class} ({confidence * 100:.2f}%)")
+
+            # Create all predictions dict
+            all_preds = {}
+            for i in range(len(CLASS_NAMES)):
+                if i < len(pred[0]):
+                    all_preds[CLASS_NAMES[i]] = float(pred[0][i])
+                else:
+                    print(f"WARNING: Missing prediction for class {i}")
+            
+            print(f"All predictions: {all_preds}")
+
+            result =  jsonify({
                 "class_index": pred_class_index,
-                'confidence': confidence
+                'confidence': confidence,
+                'all_predictions': all_preds
             })
+
+            print(f"Returning result: {result}")
+            return jsonify(result)
         
         except Exception as e:
             return jsonify({'error': f'Prediction Error: {str(e)}'}), 500
