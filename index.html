@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wheat Plant Classification</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.3.0/dist/tf.min.js"></script>
-
   <link rel="stylesheet" href="style.css">
+
   <!-- <style>
     body {
       font-family: Arial, sans-serif;
@@ -71,7 +69,6 @@
     <p>Classify your wheat plant into one of 7 categories.</p>
   </header>
 
-  <img id>
   <div class="upload-section">
     <label for="imageInput" class="upload-label">Choose Image</label>
     <input type="file" id="imageInput" accept="image/*" style="display:none;">
@@ -84,22 +81,17 @@
   <div id="result"></div>
 
   <script>
-    let model;
+    // Add Flask API
+    const API_URL = 'http://localhost:5000'
+    const preview = document.getElementById("preview");
+    const resultDiv = document.getElementById("result");
+    const classifyBtn = document.getElementById("classifyBtn")
+    let selectedFile;
+
     const categories = [
       'Rust', 'Pests', 'Mildew', 'Blight_Spot',
       'Smut_Rot', 'Fusarium_Blast', 'Healthy'
     ];
-
-    const preview = document.getElementById("preview");
-    const resultDiv = document.getElementById("result");
-    let selectedFile;
-
-    // Load TFJS model
-    async function loadModel() {
-      model = await tf.loadLayersModel('model.json'); // must match your JSON filename
-      console.log("Model loaded!");
-    }
-    loadModel();
 
     // Preview image
     document.getElementById("imageInput").addEventListener("change", (event) => {
@@ -110,33 +102,48 @@
       reader.onload = function(e) {
         preview.src = e.target.result;
         preview.style.display = "block";
-        resultDiv.innerText = "";
+        resultDiv.innerHTML = "";
       };
       reader.readAsDataURL(selectedFile);
     });
 
     // Classify image
-    document.getElementById("classifyBtn").addEventListener("click", async () => {
-      if (!selectedFile || !model) {
-        resultDiv.innerText = "Select an image and wait for the model to load.";
+    classifyBtn.addEventListener("click", async () => {
+      if (!selectedFile) {
+        resultDiv.innerHTML = '<span style="color:red;"> Please select an image.</span>';
         return;
       }
 
-      const img = new Image();
-      img.src = preview.src;
-      img.onload = async () => {
-        let tensor = tf.browser.fromPixels(img)
-                      .resizeNearestNeighbor([160, 160]) // match your model input
-                      .toFloat()
-                      .div(255.0)
-                      .expandDims(0); // batch dimension
+      classifyBtn.disabled = true;
+      classifyBtn.textContent = "Classifying ... ";
 
-        const predictions = model.predict(tensor);
-        const predIndex = predictions.argMax(-1).dataSync()[0];
-        resultDiv.innerText = `Predicted: ${categories[predIndex]}`;
-      };
+      const formData = new FormData();
+      formData.append('image', selectedFile)
+
+      try {
+        const response = await fetch(`${API_URL}/predict`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error('Classification Failed ;-;');
+
+        const data = await response.json();
+
+
+        // Display Results
+        let html = `<h3>Predicted: ${data.predicted_class}</h3>`;
+        html += `<p>Confidence: ${(data.confidence * 100).toFixed(2)}%</p>`;
+
+        resultDiv.innerHTML = html;
+
+      } catch (err) {
+        resultDiv.innerHTML = html;
+      } finally {
+        classifyBtn.disabled = false;
+        classifyBtn.textContent = "Classify";
+      }
     });
   </script>
-
 </body>
 </html>
