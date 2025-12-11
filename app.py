@@ -17,13 +17,13 @@ CORS(app) # -> make it accessible from browsers
 MODEL_PATH = 'wheat_model_v2.keras'
 model = None
 
-CLASS_NAMES = ['Blight_Spot',
-    'Fusarium_Blast',
+CLASS_NAMES = ['Blight_Spot (Leaf Blight, Septoria, Tan Spot)',
+    'Fusarium_Blast (Fusarium Head Blight, Blast)',
     'Healthy',
     'Mildew',
-    'Pests',
+    'Pests (Aphid, Mite, Stem Fly)',
     'Rust',
-    'Smut_Rot']
+    'Smut_Rot (Common Root Rot, Smut)']
 
 # Function to load model
 def load_model():

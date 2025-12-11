@@ -132,7 +132,7 @@
 
 
         // Display Results
-        let html = `<h3>Predicted: ${data.label}</h3>`;
+        let html = `<h3>Predicted:\n ${data.label}</h3>`;
         html += `<p>Confidence: ${(data.confidence * 100).toFixed(2)}%</p>`;
 
         resultDiv.innerHTML = html;
