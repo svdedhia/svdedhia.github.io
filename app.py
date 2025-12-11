@@ -46,8 +46,7 @@ def process_img(image):
     if img_array.shape[-1] == 4:
         img_array = img_array[:,:, :3]
     
-    # img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array) # Normalize to -1 to 1, which was wrong to use for application
-    img_array = img_array.astype('float32')
+    img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array) # Normalize to -1 to 1
     img_array = np.expand_dims(img_array, axis = 0)
 
     # Check
